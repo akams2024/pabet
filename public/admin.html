@@ -35,3 +35,10 @@ $('#plist').addEventListener('click',async e=>{const b=e.target.closest('button'
  if(a==='ban'||a==='unban'){const n=Math.floor(Number(row.querySelector('.bn').value))*Number(row.querySelector('.bu').value);
   if(a==='ban'&&!(n>0)){alert('ماوەیەک بنووسە');return;}
   b.disabled=true;await api('admin_ban',{key:k,minutes:a==='ban'?n:0});await load(true);return;}
+ const v=Math.floor(Number(inp.value));if(inp.value===''||!(v>=0))return;
+ b.disabled=true;const x=await api('admin_adjust',{key:k,op:a,amount:v});b.disabled=false;
+ if(!x.e){amts[k]='';const p=list.find(p=>p.key===k);if(p)p.credit=x.credit;draw();}});
+load();
+</script>
+</body>
+</html>
