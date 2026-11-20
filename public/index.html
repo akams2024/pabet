@@ -34,3 +34,81 @@ A.innerHTML=`
 <button class="go" id="ag" style="width:100%">چوونەژوورەوە</button><div class="msg" id="am"></div><div class="note" id="an"></div></div></section>
 <section id="vmain" class="hide">${top('<div class="acct"><span id="who"></span> <button class="lo" id="lo">دەرچوون</button><b id="bal">0</b></div>')}
 <nav><button class="on" data-t="lob">سەرەکی</button><button data-t="rou">ڕۆڵێت</button><button data-t="bj">بلاک جەک</button><button data-t="slot">سلۆت</button></nav>
+<div id="lob"><div class="tiles"><button class="tile t1" data-go="rou">ڕۆڵێتی ئەوروپی<small>یەک سفر، 37 ژمارە</small></button><button class="tile t2" data-go="bj">بلاک جەک<small>3 بۆ 2</small></button><button class="tile t3" data-go="slot">سلۆت<small>3 ڕیل</small></button></div></div>
+<section id="rou" class="card hide"><h2>ڕۆڵێتی ئەوروپی</h2>${wheel}<div class="hist" id="hist"></div>
+<div class="bar"><label>چیپ</label><input id="chip" inputmode="numeric" value="100"><button class="q on" data-v="100">100</button><button class="q" data-v="500">500</button><button class="q" data-v="1000">1000</button><button class="q" data-v="5000">5000</button></div>
+<div class="board">${cells}</div><div class="outs">${outs.map(o=>`<button class="${o[2]}" data-k="${o[0]}">${o[1]}</button>`).join('')}</div>
+<div class="bar"><button class="go" id="rspin" style="flex:1">سوڕاندن</button><button id="rclr">پاککردنەوە</button></div><div class="note" id="rtot"></div><div class="msg" id="rmsg"></div>
+<div class="note">ژمارەی تەنها 35 بۆ 1. سوور، ڕەش، جووت، تاک، 1-18 و 19-36 یەک بۆ یەک. بەشەکانی 12 دانەیی 2 بۆ 1.</div></section>
+<section id="bj" class="card hide"><h2>بلاک جەک</h2><div class="table"><div class="lbl">دیلەر</div><div class="hand" id="dh"></div><div class="lbl">تۆ <span id="pv"></span></div><div class="hand" id="ph"></div></div>
+${betBar}<div class="bar"><button class="go" id="deal">دابەشکردن</button><button id="hit" disabled>کارت</button><button id="st" disabled>وەستان</button><button id="dbl" disabled>دووقات</button></div><div class="msg" id="bmsg"></div><div class="note">بلاک جەک 3 بۆ 2. دیلەر لە 17 دەوەستێت.</div></section>
+<section id="slot" class="card hide"><h2>سلۆت</h2><div class="reels"><div class="reel">7</div><div class="reel">7</div><div class="reel">7</div></div>${betBar}
+<button class="go" id="spin" style="width:100%">ڕاکێشان</button><div class="msg" id="smsg"></div><div class="note">سێ هاوشێوە: ♥ ×5 ، ♣ ×8 ، ◆ ×15 ، BAR ×30 ، 7 ×100. دوو ♥ ×2</div></section></section>`;
+
+let bal=0,busy=false,reg=false;
+const rem=t=>{const m=Math.max(1,Math.ceil((t-Date.now())/60000)),h=Math.floor(m/60);return h?h+' کاتژمێر'+(m%60?' و '+(m%60)+' خولەک':''):m+' خولەک';};
+window.onBan=t=>{$('#vmain').classList.add('hide');$('#vauth').classList.remove('hide');const o=$('#am');o.className='msg lose';o.textContent='ئەکاونتەکەت قەدەغە کراوە. ماوەی ماوە: '+rem(t);};
+const welcome=u=>{const d=document.createElement('div');d.className='modal';
+ d.innerHTML='<div class="card"><h2></h2><p>ئەکاونتەکەت بە سەرکەوتوویی دروست کرا. بەخێرهاتنێکی گەرمت لێ دەکەین لە PA Bet. هیوادارین کاتێکی خۆش بەسەر ببەیت.</p><p class="note">کریدیتی ئێستات 0ـە. داوا لە بەڕێوەبەر بکە بۆت زیاد بکات.</p><button class="go" style="width:100%">دەستپێبکە</button></div>';
+ d.querySelector('h2').textContent='بەخێربێیت '+u+'!';d.querySelector('button').onclick=()=>d.remove();document.body.appendChild(d);};
+const setB=v=>{bal=v;$('#bal').textContent=fmt(v);};
+const show=(o,w,t)=>{o.className='msg '+(w?'win':'lose');o.textContent=t;};
+const noCredit=o=>show(o,0,bal<=0?'کریدیتت 0ـە. داوا لە بەڕێوەبەر بکە بۆت زیاد بکات.':'کریدیتت بەشی ئەم بڕە ناکات.');
+const getBet=(sec,o)=>{const v=Math.floor(Number(sec.querySelector('.amt').value));if(!(v>0)){show(o,0,'بڕێکی دروست بنووسە.');return 0;}if(v>bal){noCredit(o);return 0;}return v;};
+const boot=async()=>{const m=await api('me');
+ if(m.e){$('#vmain').classList.add('hide');$('#vauth').classList.remove('hide');return;}
+ setB(m.credit);$('#who').textContent=m.username;$('#vauth').classList.add('hide');$('#vmain').classList.remove('hide');};
+
+// Auth
+const mode=r=>{reg=r;$('#tl').classList.toggle('on',!r);$('#tr').classList.toggle('on',r);$('#fr').classList.toggle('hide',!r);$('#ag').textContent=r?'دروستکردنی ئەکاونت':'چوونەژوورەوە';$('#an').textContent=r?'کریدیتی ئەکاونتی نوێ 0ـە. بەڕێوەبەر کریدیتت بۆ زیاد دەکات.':'';};
+$('#tl').onclick=()=>mode(false);$('#tr').onclick=()=>mode(true);
+$('#ag').onclick=async()=>{const m=$('#am');m.textContent='';$('#ag').disabled=true;
+ const x=await api(reg?'register':'login',{name:$('#rn').value,phone:$('#rp').value,username:$('#ru').value,password:$('#rw').value});
+ $('#ag').disabled=false;if(x.e){if(!x.ban)show(m,0,x.e);return;}$('#rw').value='';await boot();if(x.welcome&&!$('#vmain').classList.contains('hide'))welcome($('#who').textContent);};
+$('#lo').onclick=async()=>{await api('logout');location.reload();};
+$$('nav button').forEach(b=>b.onclick=()=>tab(b.dataset.t));$$('[data-go]').forEach(b=>b.onclick=()=>tab(b.dataset.go));
+const tab=t=>{$$('nav button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));['lob','rou','bj','slot'].forEach(k=>$('#'+k).classList.toggle('hide',k!==t));};
+$$('.q').forEach(b=>b.onclick=()=>{const i=b.parentElement.querySelector('input');i.value=b.dataset.v;b.parentElement.querySelectorAll('.q').forEach(x=>x.classList.toggle('on',x===b));});
+
+// Roulette
+let bets={},wrot=0,brot=0;
+const total=()=>Object.values(bets).reduce((a,b)=>a+b,0);
+const drawBets=()=>{$$('#rou [data-k]').forEach(b=>{const o=b.querySelector('.chip');if(o)o.remove();const v=bets[b.dataset.k];if(v){const c=document.createElement('span');c.className='chip';c.textContent=v>=1000?(v/1000)+'k':v;b.appendChild(c);}});$('#rtot').textContent=total()?'کۆی بەست: '+fmt(total()):'';};
+$$('#rou [data-k]').forEach(b=>b.onclick=()=>{if(busy)return;const v=Math.floor(Number($('#chip').value));if(!(v>0))return;bets[b.dataset.k]=(bets[b.dataset.k]||0)+v;drawBets();});
+$('#rclr').onclick=()=>{if(busy)return;bets={};drawBets();};
+$('#rspin').onclick=async()=>{const o=$('#rmsg'),t=total();if(busy)return;
+ if(!t){show(o,0,'سەرەتا لەسەر خانەکان چیپ دابنێ.');return;}if(t>bal){noCredit(o);return;}
+ busy=true;o.textContent='';const x=await api('roulette',{bets});
+ if(x.e){show(o,0,x.e);busy=false;return;}
+ setB(bal-t);const idx=ORD.indexOf(x.r);
+ wrot=(Math.floor(wrot/360)+7)*360-idx*st;brot=(Math.floor(brot/360)-9)*360;
+ const wh=$('#wh'),bl=$('#bl');wh.style.transition='transform 6s cubic-bezier(.12,.55,.15,1)';bl.style.transition='transform 6s cubic-bezier(.3,.4,.2,1)';
+ wh.style.transform='rotate('+wrot+'deg)';bl.style.transform='rotate('+brot+'deg)';
+ await sleep(6300);setB(x.bal);
+ const h=$('#hist'),i=document.createElement('i');i.textContent=x.r;i.style.background=col(x.r);h.prepend(i);while(h.children.length>12)h.lastChild.remove();
+ show(o,x.pay>t,'ژمارە '+x.r+(x.pay?' - '+(x.pay>=t?'بردتەوە ':'گەڕایەوە ')+fmt(x.pay):' - ئەمجارە نەبردیتەوە.'));
+ bets={};drawBets();busy=false;};
+
+// Blackjack
+let live=false;
+const cardEl=c=>!c?'<div class="pc bk"></div>':`<div class="pc ${'♥♦'.includes(c.s)?'rd':''}"><span>${c.r}</span><i>${c.s}</i><span style="align-self:flex-end">${c.r}</span></div>`;
+const val=h=>{let v=0,a=0;for(const c of h){if(c.r==='A'){a++;v+=11;}else v+=['J','Q','K'].includes(c.r)?10:Number(c.r);}while(v>21&&a){v-=10;a--;}return v;};
+const drawBJ=x=>{live=!x.done;$('#ph').innerHTML=x.ph.map(cardEl).join('');$('#dh').innerHTML=x.dh.map(cardEl).join('');$('#pv').textContent='('+val(x.ph)+')';
+ $('#hit').disabled=$('#st').disabled=!live;$('#dbl').disabled=!(live&&x.ph.length===2&&bal>=x.bet);$('#deal').disabled=live;
+ if(x.bal!==undefined)setB(x.bal);if(x.msg)show($('#bmsg'),x.win,x.msg);};
+const bj=async(a,d)=>{if(busy)return;busy=true;const o=$('#bmsg');const x=await api('bj',{a,...d});busy=false;if(x.e){show(o,0,x.e);return;}if(a==='deal'){setB(bal-(x.bet||0));o.textContent='';}drawBJ(x);};
+$('#deal').onclick=()=>{const o=$('#bmsg'),b=getBet($('#bj'),o);if(b)bj('deal',{bet:b});};
+$('#hit').onclick=()=>bj('hit');$('#st').onclick=()=>bj('stand');$('#dbl').onclick=()=>bj('double');
+
+// Slots
+$('#spin').onclick=async()=>{const o=$('#smsg'),b=getBet($('#slot'),o);if(!b||busy)return;busy=true;$('#spin').disabled=true;o.textContent='';
+ const x=await api('slots',{bet:b});if(x.e){show(o,0,x.e);busy=false;$('#spin').disabled=false;return;}
+ setB(bal-b);const S=['♥','♣','◆','BAR','7'],rl=$$('.reel');
+ await new Promise(k=>{let n=0;const t=setInterval(()=>{rl.forEach((e,i)=>{e.textContent=n>=10+i*5?x.s[i]:S[Math.floor(Math.random()*5)];});if(++n>=20){clearInterval(t);k();}},90);});
+ setB(x.bal);if(x.m)show(o,1,'بردتەوە '+fmt(x.win));else show(o,0,'ئەمجارە نەبردیتەوە.');
+ busy=false;$('#spin').disabled=false;};
+await boot();
+})();
+</script>
+</body>
+</html>
